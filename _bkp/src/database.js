@@ -1,3 +1,4 @@
+require("../node_modules/@aws-sdk/eventstream-marshaller")
 var sqlite3 = require('sqlite3').verbose()
 var md5 = require('md5')
 

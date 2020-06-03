@@ -1,27 +1,34 @@
 // Create express app
 var express = require("express")
-var app = express()
+var serverless = require("serverless-http")
+// var app = express()
+// var cors = require("cors")
 var db = require("./database.js")
-var cors = require("cors")
 var bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
 
-app.use(cors());
-// Server port
-var HTTP_PORT = 8000
-// Start server
-app.listen(HTTP_PORT, () => {
-    console.log(`Servidor rodando na porta ${HTTP_PORT}`)
-});
+
+// app.use(cors());
+// // Server port
+// var HTTP_PORT = 8000
+// // Start server
+// app.listen(HTTP_PORT, () => {
+//     console.log(`Servidor rodando na porta ${HTTP_PORT}`)
+// });
+
+const app = express();
+
+const router = express.Router();
+
 // Root endpoint
-app.get("/", (req, res, next) => {
+router.get("/", (req, res, next) => {
     res.json({ "message": "Online" })
 });
 
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 //Lista todos os autores
-app.get("/api/autor", (req, res, next) => {
+router.get("/api/autor", (req, res, next) => {
 
     var sql = "select * from autor ORDER BY id DESC"
     var params = []
@@ -37,7 +44,7 @@ app.get("/api/autor", (req, res, next) => {
     });
 });
 //Lista livros
-app.get("/api/autor/livro", (req, res, next) => {
+router.get("/api/autor/livro", (req, res, next) => {
     var sql = "select * from autor"
     var params = []
     db.all(sql, params, (err, rows) => {
@@ -60,7 +67,7 @@ app.get("/api/autor/livro", (req, res, next) => {
     });
 });
 //Lista nomes
-app.get("/api/autor/nome", (req, res, next) => {
+router.get("/api/autor/nome", (req, res, next) => {
     var sql = "select * from autor"
     var params = []
     db.all(sql, params, (err, rows) => {
@@ -84,7 +91,7 @@ app.get("/api/autor/nome", (req, res, next) => {
 });
 
 //Retorna o autor específico para aquele id, caso contrário, retorna uma mensagem de erro
-app.get("/api/autor/:id", (req, res, next) => {
+router.get("/api/autor/:id", (req, res, next) => {
     var sql = "select * from autor where id = ?";
     var params = [req.params.id];
     db.get(sql, params, (err, row) => {
@@ -106,7 +113,7 @@ app.get("/api/autor/:id", (req, res, next) => {
 });
 
 //Cria um autor
-app.post("/api/autor", (req, res, next) => {
+router.post("/api/autor", (req, res, next) => {
     var errors = []
     if (!req.body.preco) {
         errors.push("preço não especificado");
@@ -139,7 +146,7 @@ app.post("/api/autor", (req, res, next) => {
 })
 
 //Atualiza um autor
-app.patch("/api/autor/:id", (req, res, next) => {
+router.patch("/api/autor/:id", (req, res, next) => {
     var data = {
         name: req.body.nome,
         email: req.body.livro,
@@ -166,7 +173,7 @@ app.patch("/api/autor/:id", (req, res, next) => {
 })
 
 //Remove um autor
-app.delete("/api/autor/:id", (req, res, next) => {
+router.delete("/api/autor/:id", (req, res, next) => {
     db.run(
         'DELETE FROM autor WHERE id = ?',
         req.params.id,
@@ -182,6 +189,11 @@ app.delete("/api/autor/:id", (req, res, next) => {
 // Insira outros endpoints aqui!
 
 
-app.use(function (req, res) {
+router.use(function (req, res) {
     res.status(404).json({"message": "url não encontrada"});
 });
+
+app.use(`/.netlify/functions/api`, router);
+
+module.exports = app;
+module.exports.handler = serverless(app);
